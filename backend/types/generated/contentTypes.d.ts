@@ -368,12 +368,13 @@ export interface ApiCharacterCharacter extends Schema.CollectionType {
     singularName: 'character';
     pluralName: 'characters';
     displayName: 'Character';
+    description: '';
   };
   options: {
     draftAndPublish: false;
   };
   attributes: {
-    name: Attribute.String;
+    name: Attribute.String & Attribute.Required;
     description: Attribute.Text;
     imageUrl: Attribute.String;
     health: Attribute.Integer & Attribute.DefaultTo<100>;
@@ -803,9 +804,9 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
       'manyToOne',
       'plugin::users-permissions.role'
     >;
-    experience: Attribute.String;
-    wins: Attribute.Integer;
-    losses: Attribute.Integer;
+    experience: Attribute.String & Attribute.DefaultTo<'0'>;
+    wins: Attribute.Integer & Attribute.DefaultTo<0>;
+    losses: Attribute.Integer & Attribute.DefaultTo<0>;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<

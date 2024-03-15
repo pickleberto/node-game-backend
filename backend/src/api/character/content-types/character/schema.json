@@ -4,7 +4,8 @@
   "info": {
     "singularName": "character",
     "pluralName": "characters",
-    "displayName": "Character"
+    "displayName": "Character",
+    "description": ""
   },
   "options": {
     "draftAndPublish": false
@@ -12,7 +13,8 @@
   "pluginOptions": {},
   "attributes": {
     "name": {
-      "type": "string"
+      "type": "string",
+      "required": true
     },
     "description": {
       "type": "text"

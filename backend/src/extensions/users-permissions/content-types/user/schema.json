@@ -66,13 +66,16 @@
       "configurable": false
     },
     "experience": {
-      "type": "string"
+      "type": "string",
+      "default": "0"
     },
     "wins": {
-      "type": "integer"
+      "type": "integer",
+      "default": 0
     },
     "losses": {
-      "type": "integer"
+      "type": "integer",
+      "default": 0
     }
   }
 }

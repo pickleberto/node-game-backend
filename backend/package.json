@@ -24,6 +24,7 @@
     "react-dom": "^18.0.0",
     "react-router-dom": "5.3.4",
     "socket.io": "^4.7.5",
+    "strapi-plugin-schemas-to-ts": "^1.1.21",
     "styled-components": "5.3.3"
   },
   "author": {

@@ -1,6 +1,7 @@
 import { Strapi } from '@strapi/strapi';
 import socketio from 'socket.io';
 import jwt from 'jsonwebtoken';
+import { QueuePlayer, addToQueue } from "../scripts/BattleManager";
 
 export default {
   /**
@@ -28,14 +29,24 @@ export default {
       socket.on('searchBattle', (data)=>{
         console.log('Search battle!');
         
-        const myJwt = data.jwt;
-        const charId = data.characterId;
-        const jwtSecret = process.env.JWT_SECRET;
+        try {
+          const myJwt = data.jwt;
+          const charId = data.characterId;
+          const jwtSecret = process.env.JWT_SECRET;
+          const decoded = jwt.verify(myJwt, jwtSecret) as jwt.JwtPayload;
+          const userId = decoded.id;
+          const playerObjectForQueue:QueuePlayer = {
+            userId: userId,
+            characterId: charId,
+            socket:socket
+          }
+          
+          // add into the matchmaking queue
+          addToQueue(playerObjectForQueue);
 
-        const decoded = jwt.verify(myJwt, jwtSecret) as jwt.JwtPayload;
-        const userId = decoded.id;
-
-        // add into the matchmaking queue
+        } catch (error) {
+          console.log(error);          
+        }
       });
 
       socket.on('sendTurn', (data)=>{

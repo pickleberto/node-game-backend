@@ -379,6 +379,11 @@ export interface ApiCharacterCharacter extends Schema.CollectionType {
     imageUrl: Attribute.String;
     health: Attribute.Integer & Attribute.DefaultTo<100>;
     mana: Attribute.Integer & Attribute.DefaultTo<100>;
+    skills: Attribute.Relation<
+      'api::character.character',
+      'oneToMany',
+      'api::skill.skill'
+    >;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<
@@ -389,6 +394,40 @@ export interface ApiCharacterCharacter extends Schema.CollectionType {
       Attribute.Private;
     updatedBy: Attribute.Relation<
       'api::character.character',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
+export interface ApiSkillSkill extends Schema.CollectionType {
+  collectionName: 'skills';
+  info: {
+    singularName: 'skill';
+    pluralName: 'skills';
+    displayName: 'Skill';
+    description: '';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    name: Attribute.String;
+    description: Attribute.Text;
+    imageUrl: Attribute.String;
+    cooldown: Attribute.Integer & Attribute.DefaultTo<0>;
+    manaCost: Attribute.Integer & Attribute.DefaultTo<0>;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::skill.skill',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::skill.skill',
       'oneToOne',
       'admin::user'
     > &
@@ -835,6 +874,7 @@ declare module '@strapi/types' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'api::character.character': ApiCharacterCharacter;
+      'api::skill.skill': ApiSkillSkill;
       'plugin::upload.file': PluginUploadFile;
       'plugin::upload.folder': PluginUploadFolder;
       'plugin::content-releases.release': PluginContentReleasesRelease;

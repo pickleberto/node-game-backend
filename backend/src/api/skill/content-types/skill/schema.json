@@ -28,6 +28,12 @@
     "manaCost": {
       "type": "integer",
       "default": 0
+    },
+    "mechanic": {
+      "displayName": "mechanic",
+      "type": "component",
+      "repeatable": true,
+      "component": "mechanic.mechanic"
     }
   }
 }

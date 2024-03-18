@@ -1,0 +1,13 @@
+{
+  "collectionName": "components_healing_healings",
+  "info": {
+    "displayName": "healing",
+    "icon": "heart"
+  },
+  "options": {},
+  "attributes": {
+    "healAmount": {
+      "type": "integer"
+    }
+  }
+}

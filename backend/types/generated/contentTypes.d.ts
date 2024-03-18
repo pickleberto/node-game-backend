@@ -418,6 +418,7 @@ export interface ApiSkillSkill extends Schema.CollectionType {
     imageUrl: Attribute.String;
     cooldown: Attribute.Integer & Attribute.DefaultTo<0>;
     manaCost: Attribute.Integer & Attribute.DefaultTo<0>;
+    mechanic: Attribute.Component<'mechanic.mechanic', true>;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<

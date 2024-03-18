@@ -16,6 +16,12 @@ type BattlePlayer = {
     character:Character_Plain
 }
 
+type TurnData = {
+    skillSlot:number
+}
+
+export let SocketToBattleMap = new Map<Socket, Battle>(); 
+
 class Battle{
     player1:BattlePlayer;
     player2:BattlePlayer;
@@ -39,8 +45,31 @@ class Battle{
         });
     }
 
-    doTurn(){
+    doTurn(mySocket:Socket, turnData:TurnData){
+        const me = mySocket === this.player1.socket ? this.player1 : this.player2;
+        const opponent = mySocket === this.player1.socket ? this.player2 : this.player1;
 
+        const skillToUse = me.character.skills[turnData.skillSlot];
+
+        if(skillToUse === undefined)
+        {
+            console.log("skill (slot :", turnData.skillSlot, ") is undefined ");
+            return;
+        }
+
+        me.character.mana -= skillToUse.manaCost;
+
+        me.socket.emit("turnResult", {
+            "left": JSON.stringify(me, BlockList),
+            "right": JSON.stringify(opponent, BlockList)
+        })
+
+        opponent.socket.emit("turnResult", {
+            "left": JSON.stringify(opponent, BlockList),
+            "right": JSON.stringify(me, BlockList)
+        })
+
+        console.log("turn done!");
     }
 }
 
@@ -70,6 +99,9 @@ export const addToQueue = async (player:QueuePlayer) => {
         const opponent = queue.shift();
         const player2 = await QueryPlayer(opponent);
         const battle = new Battle(player1, player2);
+        
+        SocketToBattleMap.set(player.socket, battle);
+        SocketToBattleMap.set(opponent.socket, battle);
         
         console.log("----------Battle:")
         console.log(player1.username, player1.character.name);

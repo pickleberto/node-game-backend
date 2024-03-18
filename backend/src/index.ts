@@ -1,7 +1,7 @@
 import { Strapi } from '@strapi/strapi';
 import socketio from 'socket.io';
 import jwt from 'jsonwebtoken';
-import { QueuePlayer, addToQueue } from "../scripts/BattleManager";
+import { QueuePlayer, SocketToBattleMap, addToQueue } from "../scripts/BattleManager";
 
 export default {
   /**
@@ -51,6 +51,9 @@ export default {
 
       socket.on('sendTurn', (data)=>{
         console.log('send TURN!');
+        console.log('turn received: ', data);
+        const myBattle = SocketToBattleMap.get(socket);
+        myBattle.doTurn(socket,data);
       })
 
     })

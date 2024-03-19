@@ -50,10 +50,9 @@ export default {
       });
 
       socket.on('sendTurn', (data)=>{
-        console.log('send TURN!');
-        console.log('turn received: ', data);
         const myBattle = SocketToBattleMap.get(socket);
-        myBattle.doTurn(socket,data);
+        myBattle.ReceiveTurn(socket,data);
+        console.log('turn received!');
       })
 
     })

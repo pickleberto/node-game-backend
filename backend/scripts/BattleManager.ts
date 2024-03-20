@@ -3,7 +3,8 @@ import { Character_Plain } from "../src/api/character/content-types/character/ch
 import { User_Plain } from "../src/common/schemas-to-ts/User";
 import { BlockList } from "./BlockList";
 import { Targeting } from "../src/components/mechanic/interfaces/Mechanic";
-import { RegisterSkillFunctions } from "./Mechanics";
+import { CanUseSkill, RegisterSkillFunctions, UpdateAllSkills, UpdateSkillVars } from "./Mechanics";
+import { Skill_Plain } from "../src/api/skill/content-types/skill/skill";
 
 export type QueuePlayer = {
     userId:number,
@@ -13,7 +14,15 @@ export type QueuePlayer = {
 
 export type CharacterFull = Character_Plain & {
     TakeDamage: (amount:number) => void,
-    Heal:(amount:number) => void
+    Heal:(amount:number) => void,
+    currentHealth:number,
+    currentMana:number,
+    skillVars:SkillVars[]
+}
+
+export type SkillVars = {
+    currentCooldown:number,
+    currentDuration:number
 }
 
 type BattlePlayer = {
@@ -69,8 +78,10 @@ class Battle{
 
         ProccessPlayerTurn(this.player2, this.player2Turn, this.player1);
         this.player2Turn = undefined;
+        
+        // TODO: reload mana
 
-        if(this.player1.character.mana <= 0 || this.player2.character.mana <= 0)
+        if(this.player1.character.mana <= 0 || this.player2.character.mana <= 0)// TODO: check health
         {
             this.endBattle = true;
             console.log("Battle ended");
@@ -113,23 +124,29 @@ const ScheduleNextTurn = function(this:Battle){
     this.ProccessTurn();
     if(!this.endBattle)
     {
-        setTimeout(this.ScheduleNextTurn, 1000);
+        setTimeout(this.ScheduleNextTurn, 10000);
     }
 }
 
 const ProccessPlayerTurn = function(me:BattlePlayer, turnData:TurnData, opponent:BattlePlayer)
 {
-    if(turnData === undefined) return;
-
-    const skillToUse = me.character.skills[turnData.skillSlot];
-
-    if(skillToUse === undefined)
+    if(turnData === undefined) 
     {
-        console.log("skill (slot :", turnData.skillSlot, ") is undefined ");
+        console.log("no turn to proccess");
+        UpdateAllSkills(me.character);
         return;
     }
 
-    if(skillToUse.manaCost <= me.character.mana) 
+    const skillToUse = me.character.skills[turnData.skillSlot];
+    const skillVar = me.character.skillVars[turnData.skillSlot];
+    if(skillToUse === undefined || skillVar === undefined)
+    {
+        console.log("skill (slot :", turnData.skillSlot, ") is undefined ");
+        UpdateAllSkills(me.character);
+        return;
+    }
+
+    if(CanUseSkill(me.character, skillToUse, skillVar)) 
     {
         skillToUse.mechanic.forEach(mechanic => {
             
@@ -154,9 +171,16 @@ const ProccessPlayerTurn = function(me:BattlePlayer, turnData:TurnData, opponent
         });
         
         me.character.mana -= skillToUse.manaCost;
-    } 
+        // skillVar.currentDuration -= 1;
+        skillVar.currentCooldown -= 1;
+        UpdateAllSkills(me.character, turnData.skillSlot);
+    }
+    else
+    {
+        UpdateAllSkills(me.character);
+    }
     
-    // TODO: Update cooldowns
+    console.log("turn proccessed");
 }
 
 async function QueryPlayer(player:QueuePlayer){

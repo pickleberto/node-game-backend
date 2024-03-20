@@ -3,7 +3,7 @@ import { Character_Plain } from "../src/api/character/content-types/character/ch
 import { User_Plain } from "../src/common/schemas-to-ts/User";
 import { BlockList } from "./BlockList";
 import { Targeting } from "../src/components/mechanic/interfaces/Mechanic";
-import { CanUseSkill, RegisterSkillFunctions, UpdateAllSkills, UpdateSkillVars } from "./Mechanics";
+import { CanUseSkill, ManaRegeneration, RegisterSkillFunctions, UpdateAllSkills } from "./Mechanics";
 import { Skill_Plain } from "../src/api/skill/content-types/skill/skill";
 
 export type QueuePlayer = {
@@ -79,16 +79,16 @@ class Battle{
         ProccessPlayerTurn(this.player2, this.player2Turn, this.player1);
         this.player2Turn = undefined;
         
-        // TODO: reload mana
-
-        if(this.player1.character.mana <= 0 || this.player2.character.mana <= 0)// TODO: check health
+        // reload mana
+        ManaRegeneration(this.player1.character);
+        ManaRegeneration(this.player2.character);
+        
+        if(this.player1.character.health <= 0 || this.player2.character.health <= 0)
         {
             this.endBattle = true;
             console.log("Battle ended");
-            //TODO: handle battle results
-
-            this.player1.socket.disconnect();
-            this.player2.socket.disconnect();
+            HandleResult(this.player1);
+            HandleResult(this.player2);
         }
         else
         {
@@ -104,7 +104,6 @@ class Battle{
         }              
 
         console.log("turn done!");
-        
     }
 
     ReceiveTurn(mySocket:Socket, turnData:TurnData){
@@ -182,6 +181,14 @@ const ProccessPlayerTurn = function(me:BattlePlayer, turnData:TurnData, opponent
     
     console.log("turn proccessed");
 }
+
+const HandleResult = function(player:BattlePlayer)
+{
+    let battleResult = (player.character.health <= 0) ? "lose" : "win";
+    player.socket.emit("battleResult", { "battleResult": battleResult });
+    //TODO: update db and add XP
+}
+
 
 async function QueryPlayer(player:QueuePlayer){
     const playerFromStrapi:User_Plain = await strapi.db.query("plugin::users-permissions.user")

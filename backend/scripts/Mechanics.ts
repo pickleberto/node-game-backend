@@ -34,7 +34,7 @@ export const CanUseSkill = (character: CharacterFull, skill:Skill_Plain, skillVa
     && skillVar.currentCooldown === skill.cooldown);
 }
 
-export const UpdateSkillVars = (skill:Skill_Plain, skillVar:SkillVars) => {
+const UpdateSkillVars = (skill:Skill_Plain, skillVar:SkillVars) => {
     if(skillVar.currentCooldown < skill.cooldown && skillVar.currentCooldown > 0)
     {
         skillVar.currentCooldown -= 1;
@@ -55,5 +55,17 @@ export const UpdateAllSkills = (character:CharacterFull, ignoreSlot = -1) => {
         let skill:Skill_Plain = character.skills[index];
         let vars:SkillVars = character.skillVars[index];
         UpdateSkillVars(skill, vars);
+    }
+}
+const MAX_MANA = 100;
+const MANA_REGEN = 5;
+export const ManaRegeneration = (character:CharacterFull) => {
+    if(character.mana < MAX_MANA)
+    {
+        character.mana += MANA_REGEN;
+    }
+    if(character.mana > MAX_MANA)
+    {
+        character.mana = MAX_MANA;
     }
 }

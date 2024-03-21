@@ -58,12 +58,14 @@ class Battle{
         //send the start event to both player clients
         this.player1.socket.emit("startbattle",{
             "left": JSON.stringify(this.player1, BlockList),
-            "right": JSON.stringify(this.player2, BlockList)
+            "right": JSON.stringify(this.player2, BlockList),
+            "turnTime": TURN_TIME_S
         });
 
         this.player2.socket.emit("startbattle",{
             "left": JSON.stringify(this.player2, BlockList),
-            "right": JSON.stringify(this.player1, BlockList)
+            "right": JSON.stringify(this.player1, BlockList),
+            "turnTime": TURN_TIME_S
         });
         this.endBattle = false;
     }
@@ -94,12 +96,14 @@ class Battle{
         {
             this.player1.socket.emit("turnResult", {
                 "left": JSON.stringify(this.player1, BlockList),
-                "right": JSON.stringify(this.player2, BlockList)
+                "right": JSON.stringify(this.player2, BlockList),
+                "turnTime": TURN_TIME_S
             });
     
             this.player2.socket.emit("turnResult", {
                 "left": JSON.stringify(this.player2, BlockList),
-                "right": JSON.stringify(this.player1, BlockList)
+                "right": JSON.stringify(this.player1, BlockList),
+                "turnTime": TURN_TIME_S
             });
         }              
 
@@ -118,12 +122,12 @@ class Battle{
         }
     }
 }
-
+const TURN_TIME_S = 10;
 const ScheduleNextTurn = function(this:Battle){
     this.ProccessTurn();
     if(!this.endBattle)
     {
-        setTimeout(this.ScheduleNextTurn, 10000);
+        setTimeout(this.ScheduleNextTurn, TURN_TIME_S * 1000);
     }
 }
 

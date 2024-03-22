@@ -4,7 +4,6 @@ import { User_Plain } from "../src/common/schemas-to-ts/User";
 import { BlockList } from "./BlockList";
 import { Targeting } from "../src/components/mechanic/interfaces/Mechanic";
 import { CanUseSkill, ManaRegeneration, RegisterSkillFunctions, UpdateAllSkills } from "./Mechanics";
-import { Skill_Plain } from "../src/api/skill/content-types/skill/skill";
 
 export type QueuePlayer = {
     userId:number,
@@ -87,7 +86,7 @@ class Battle{
         ManaRegeneration(this.player1.character);
         ManaRegeneration(this.player2.character);
         
-        console.log("inactivity: %d, %d", this.player1.inactivityCount, this.player2.inactivityCount);
+        console.debug("inactivity: %d, %d", this.player1.inactivityCount, this.player2.inactivityCount);
 
         if(this.player1.inactivityCount > INACTIVITY_MAX_TURNS || this.player2.inactivityCount > INACTIVITY_MAX_TURNS)
         {
@@ -161,7 +160,7 @@ const ProccessPlayerTurn = function(me:BattlePlayer, opponent:BattlePlayer)
     const skillVar = me.character.skillVars[me.turnData.skillSlot];
     if(skillToUse === undefined || skillVar === undefined)
     {
-        console.log("skill (slot :", me.turnData.skillSlot, ") is undefined ");
+        console.debug("skill (slot :", me.turnData.skillSlot, ") is undefined ");
         UpdateAllSkills(me.character);
         me.inactivityCount += 1;
         return;
@@ -236,10 +235,25 @@ async function QueryPlayer(player:QueuePlayer){
     return bPlayer;
 }
 
+const QUEUE_TIMEOUT = 10 * 1000;
 export const addToQueue = async (player:QueuePlayer) => {
-    if(queue.length > 0) {
+    if(queue.length > 0) 
+    {
+        const opponents = queue.filter((p)=>p.userId!=player.userId)
+        const opponent = opponents.shift();
+        if(opponent === undefined)
+        {
+            return;
+        }
+
+        const index = queue.indexOf(opponent);
+        if(index < 0)
+        {
+            return;
+        }
+        queue.splice(index, 1);
+
         const player1 = await QueryPlayer(player);
-        const opponent = queue.shift();
         const player2 = await QueryPlayer(opponent);
         const battle = new Battle(player1, player2);
         
@@ -259,5 +273,13 @@ export const addToQueue = async (player:QueuePlayer) => {
         battle.ScheduleNextTurn();
     } else {
         queue.push(player);
+        setTimeout(() => {
+            const index = queue.indexOf(player);
+            if(index < 0) return;
+            
+            queue.splice(index, 1);
+            console.debug("player %d removed from queue", player.userId);
+            player.socket.emit("noMatch", "No matches found");
+        }, QUEUE_TIMEOUT);
     }
 }

@@ -4,6 +4,3 @@ Online repo for the nodejs backend with Unity frontend course.
 ## TODO
 
 * update win/loss/exp of user;
-* validate/handle user already logged;
-* avoid battle against self;
-* handle player quit battle;

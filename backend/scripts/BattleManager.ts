@@ -30,7 +30,9 @@ type BattlePlayer = {
     socket:Socket,
     character:CharacterFull,
     turnData:TurnData,
-    inactivityCount:number
+    inactivityCount:number,
+    wins:number,
+    losses:number
 }
 
 type TurnData = {
@@ -210,14 +212,18 @@ const HandleResult = function(player:BattlePlayer)
     let playerLose = (player.character.health <= 0) || (player.inactivityCount > INACTIVITY_MAX_TURNS);
     let battleResult = playerLose ? "lose" : "win";
     player.socket.emit("battleResult", { "battleResult": battleResult });
-    //TODO: update db and add XP
+    
+    const updateWins = playerLose ? player.wins : player.wins + 1;
+    const updateLosses = playerLose ? player.losses + 1 : player.losses;
+
+    strapi.entityService.update("plugin::users-permissions.user", player.id, { data:{wins:updateWins, losses:updateLosses} });
 }
 
 
 async function QueryPlayer(player:QueuePlayer){
     const playerFromStrapi:User_Plain = await strapi.db.query("plugin::users-permissions.user")
     .findOne({where:{id:player.userId}});
-
+    
     const playerCharacter = await strapi.entityService.findOne("api::character.character",
      player.characterId, { 
         populate:["skills", "skills.mechanic", "skills.mechanic.damage", "skills.mechanic.healing"] 
@@ -229,7 +235,9 @@ async function QueryPlayer(player:QueuePlayer){
         socket:player.socket,
         character:playerCharacter as CharacterFull,
         turnData:undefined,
-        inactivityCount:0
+        inactivityCount:0,
+        wins:playerFromStrapi["wins"],
+        losses:playerFromStrapi["losses"]
     }
 
     return bPlayer;

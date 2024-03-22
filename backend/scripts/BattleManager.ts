@@ -29,7 +29,9 @@ type BattlePlayer = {
     id:number,
     username:string,
     socket:Socket,
-    character:CharacterFull
+    character:CharacterFull,
+    turnData:TurnData,
+    inactivityCount:number
 }
 
 type TurnData = {
@@ -40,12 +42,12 @@ type TurnData = {
 export let SocketToBattleMap = new Map<Socket, Battle>();
 let queue: QueuePlayer[] = []
 
+const INACTIVITY_MAX_TURNS = 12;
+
 class Battle{
     player1:BattlePlayer;
     player2:BattlePlayer;
     endBattle:boolean;
-    player1Turn:TurnData;
-    player2Turn:TurnData;
     ScheduleNextTurn;
 
     constructor(player1:BattlePlayer, player2:BattlePlayer){
@@ -75,25 +77,40 @@ class Battle{
         
         console.log("proccessing turn");
 
-        ProccessPlayerTurn(this.player1, this.player1Turn, this.player2);
-        this.player1Turn = undefined;
+        ProccessPlayerTurn(this.player1, this.player2);
+        this.player1.turnData = undefined;
 
-        ProccessPlayerTurn(this.player2, this.player2Turn, this.player1);
-        this.player2Turn = undefined;
+        ProccessPlayerTurn(this.player2, this.player1);
+        this.player2.turnData = undefined;
         
         // reload mana
         ManaRegeneration(this.player1.character);
         ManaRegeneration(this.player2.character);
         
+        console.log("inactivity: %d, %d", this.player1.inactivityCount, this.player2.inactivityCount);
+
+        if(this.player1.inactivityCount > INACTIVITY_MAX_TURNS || this.player2.inactivityCount > INACTIVITY_MAX_TURNS)
+        {
+            this.endBattle = true;
+            console.log("Battle ended, player inactive");
+        }
+
         if(this.player1.character.health <= 0 || this.player2.character.health <= 0)
         {
             this.endBattle = true;
-            console.log("Battle ended");
+            console.log("Battle ended, character is dead");
+        }
+
+        if(this.endBattle)
+        {
+            console.log("Battle finished");
             HandleResult(this.player1);
             HandleResult(this.player2);
         }
         else
         {
+            console.log("turn done!");
+
             this.player1.socket.emit("turnResult", {
                 "left": JSON.stringify(this.player1, BlockList),
                 "right": JSON.stringify(this.player2, BlockList),
@@ -105,20 +122,19 @@ class Battle{
                 "right": JSON.stringify(this.player1, BlockList),
                 "turnTime": TURN_TIME_S
             });
-        }              
-
-        console.log("turn done!");
+        }
+        
     }
 
     ReceiveTurn(mySocket:Socket, turnData:TurnData){
 
         if(mySocket === this.player1.socket)
         {
-            this.player1Turn = turnData;
+            this.player1.turnData = turnData;
         } 
         else 
         {
-            this.player2Turn = turnData;
+            this.player2.turnData = turnData;
         }
     }
 }
@@ -131,23 +147,27 @@ const ScheduleNextTurn = function(this:Battle){
     }
 }
 
-const ProccessPlayerTurn = function(me:BattlePlayer, turnData:TurnData, opponent:BattlePlayer)
+const ProccessPlayerTurn = function(me:BattlePlayer, opponent:BattlePlayer)
 {
-    if(turnData === undefined) 
+    if(me.turnData === undefined) 
     {
         console.log("no turn to proccess");
         UpdateAllSkills(me.character);
+        me.inactivityCount += 1;
         return;
     }
 
-    const skillToUse = me.character.skills[turnData.skillSlot];
-    const skillVar = me.character.skillVars[turnData.skillSlot];
+    const skillToUse = me.character.skills[me.turnData.skillSlot];
+    const skillVar = me.character.skillVars[me.turnData.skillSlot];
     if(skillToUse === undefined || skillVar === undefined)
     {
-        console.log("skill (slot :", turnData.skillSlot, ") is undefined ");
+        console.log("skill (slot :", me.turnData.skillSlot, ") is undefined ");
         UpdateAllSkills(me.character);
+        me.inactivityCount += 1;
         return;
     }
+
+    me.inactivityCount = 0;
 
     if(CanUseSkill(me.character, skillToUse, skillVar)) 
     {
@@ -176,7 +196,7 @@ const ProccessPlayerTurn = function(me:BattlePlayer, turnData:TurnData, opponent
         me.character.mana -= skillToUse.manaCost;
         // skillVar.currentDuration -= 1;
         skillVar.currentCooldown -= 1;
-        UpdateAllSkills(me.character, turnData.skillSlot);
+        UpdateAllSkills(me.character, me.turnData.skillSlot);
     }
     else
     {
@@ -188,7 +208,8 @@ const ProccessPlayerTurn = function(me:BattlePlayer, turnData:TurnData, opponent
 
 const HandleResult = function(player:BattlePlayer)
 {
-    let battleResult = (player.character.health <= 0) ? "lose" : "win";
+    let playerLose = (player.character.health <= 0) || (player.inactivityCount > INACTIVITY_MAX_TURNS);
+    let battleResult = playerLose ? "lose" : "win";
     player.socket.emit("battleResult", { "battleResult": battleResult });
     //TODO: update db and add XP
 }
@@ -208,6 +229,8 @@ async function QueryPlayer(player:QueuePlayer){
         username:playerFromStrapi.username,
         socket:player.socket,
         character:playerCharacter as CharacterFull,
+        turnData:undefined,
+        inactivityCount:0
     }
 
     return bPlayer;

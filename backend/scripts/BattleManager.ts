@@ -211,12 +211,13 @@ const HandleResult = function(player:BattlePlayer)
 {
     let playerLose = (player.character.health <= 0) || (player.inactivityCount > INACTIVITY_MAX_TURNS);
     let battleResult = playerLose ? "lose" : "win";
-    player.socket.emit("battleResult", { "battleResult": battleResult });
     
     const updateWins = playerLose ? player.wins : player.wins + 1;
     const updateLosses = playerLose ? player.losses + 1 : player.losses;
-
+    
     strapi.entityService.update("plugin::users-permissions.user", player.id, { data:{wins:updateWins, losses:updateLosses} });
+
+    player.socket.emit("battleResult", { "battleResult": battleResult, "userWins":updateWins, "userLosses":updateLosses });
 }
 
 

@@ -49,6 +49,7 @@ class Battle{
     player1:BattlePlayer;
     player2:BattlePlayer;
     endBattle:boolean;
+    turnCount:number;
     ScheduleNextTurn;
 
     constructor(player1:BattlePlayer, player2:BattlePlayer){
@@ -58,19 +59,24 @@ class Battle{
 
     Start(){
         console.log("Starting battle");
+        this.turnCount = 0;
+        this.endBattle = false;
+        
         //send the start event to both player clients
         this.player1.socket.emit("startbattle",{
             "left": JSON.stringify(this.player1, BlockList),
             "right": JSON.stringify(this.player2, BlockList),
-            "turnTime": TURN_TIME_S
+            "turnTime": TURN_TIME_S,
+            "turnCount": this.turnCount
+
         });
 
         this.player2.socket.emit("startbattle",{
             "left": JSON.stringify(this.player2, BlockList),
             "right": JSON.stringify(this.player1, BlockList),
-            "turnTime": TURN_TIME_S
+            "turnTime": TURN_TIME_S,
+            "turnCount": this.turnCount
         });
-        this.endBattle = false;
     }
 
     ProccessTurn(){
@@ -110,19 +116,22 @@ class Battle{
         }
         else
         {
-            console.log("turn done!");
+            console.log("turn %d done!", this.turnCount);
+            this.turnCount += 1;
 
             this.player1.socket.emit("turnResult", {
                 "left": JSON.stringify(this.player1, BlockList),
                 "right": JSON.stringify(this.player2, BlockList),
-                "turnTime": TURN_TIME_S
+                "turnTime": TURN_TIME_S,
+                "turnCount": this.turnCount
             });
-    
+            
             this.player2.socket.emit("turnResult", {
                 "left": JSON.stringify(this.player2, BlockList),
                 "right": JSON.stringify(this.player1, BlockList),
-                "turnTime": TURN_TIME_S
-            });
+                "turnTime": TURN_TIME_S,
+                "turnCount": this.turnCount
+            });            
         }
         
     }

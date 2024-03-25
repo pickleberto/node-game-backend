@@ -1,43 +1,43 @@
-FROM node:18.15-alpine
+# Using a standard Node.js image instead of Alpine
+FROM node:18
 
-# Add the required repositories and install vips-dev
-RUN echo "https://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories \
-    && echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
-    && echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories \
-    && apk update \
-    && apk add vips-dev fftw-dev build-base
+# Install required libraries for sharp
+RUN apt-get update && apt-get install -y \
+    libvips-dev \
+    fftw-dev \
+    build-essential
 
-# where our Strapi app will live
-RUN mkdir -p /app
-
-# Set /app as the working directory
+# Set up app directory
 WORKDIR /app
 
-# Set SHARP_IGNORE_GLOBAL_LIBVIPS to use the globally installed libvips
-ENV SHARP_IGNORE_GLOBAL_LIBVIPS=1
+# Copy package and yarn lock files
+COPY ./backend/package.json ./backend/yarn.lock ./
 
-# Copy .env file
-# Copy individual files/folders
-COPY ./backend/package.json /app/
-COPY ./backend/yarn.lock /app/
-COPY ./.env /app/
-COPY ./backend/src /app/src  
+# Explicitly install a compatible version of sharp
+RUN yarn add sharp@latest
 
-# Install dependencies in /app
+# Increase npm logging for debugging (optional)
+ENV npm_config_loglevel verbose
+
+# Install other dependencies
 RUN yarn config set network-timeout 600000 -g && yarn install
 
-# Copy the rest of our Strapi folder into /app
-COPY ./backend /app
+# Copy the rest of the application files
+COPY ./.env ./
+COPY ./backend/src ./src  
+COPY ./backend ./
+COPY ./backend/tsconfig.json ./tsconfig.json
 
+
+# Environment variables
 ENV PUBLIC_URL ${PUBLIC_URL}
+ENV NODE_ENV ${NODE_ENV}
 
-# For production build
-ENV NODE_ENV=${NODE_ENV}
-
-# Install dependencies and build the project
+# Build the Strapi application
 RUN yarn build
 
+# Expose Strapi port
 EXPOSE 1337
 
-# Run yarn start, as we would via the command line 
+# Start the application
 CMD ["yarn", "start"]
